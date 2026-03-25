@@ -500,11 +500,42 @@ body { background:var(--black); color:var(--white); font-family:'Noto Sans KR',s
   </div>
 </div>
 
+
+<!-- ═══ TRAINER SCREEN ═══ -->
+<div class="screen" id="screen-trainer">
+  <div id="trainerMemberListView">
+    <div style="padding:20px 20px 8px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:16px;font-weight:700">회원 관리</div>
+      <div style="font-size:12px;color:var(--gray3)" id="trainerMemberCount"></div>
+    </div>
+    <div style="padding:0 20px 16px">
+      <input id="memberSearchInput" oninput="filterMembers()" placeholder="회원 이름 검색..." style="width:100%;background:var(--gray1);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--white);font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none">
+    </div>
+    <div id="trainerMemberList"></div>
+  </div>
+  <div id="trainerMemberDetailView" style="display:none">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);position:sticky;top:57px;background:rgba(7,9,15,.95);backdrop-filter:blur(16px);z-index:50">
+      <button onclick="backToMemberList()" style="background:var(--gray2);border:1px solid var(--border);border-radius:10px;color:var(--white);padding:6px 14px;font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer">← 목록</button>
+      <div id="detailMemberName" style="font-size:16px;font-weight:700"></div>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border)">
+      <button id="dtab-meal" onclick="setDetailTab('meal')" style="flex:1;padding:12px;background:none;border:none;border-bottom:2px solid var(--blue-light);color:var(--blue-light);font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;cursor:pointer">🥗 식단 피드</button>
+      <button id="dtab-workout" onclick="setDetailTab('workout')" style="flex:1;padding:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--gray3);font-family:'Noto Sans KR',sans-serif;font-size:14px;cursor:pointer">🏋️ 운동일지</button>
+    </div>
+    <div id="detailMealList"></div>
+    <div id="detailWorkoutList" style="display:none"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="nav-btn active" id="nav-feed" onclick="navigate('feed')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     식단
+  </button>
+  <button class="nav-btn" id="nav-trainer" onclick="navigate('trainer')" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    회원관리
   </button>
   <button class="nav-btn" id="nav-workout" onclick="navigate('workout')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 9h12M6 15h12"/></svg>
@@ -610,8 +641,12 @@ function initApp() {
   } else if (currentRole === 'trainer') {
     badge.className = 'role-badge role-trainer'; badge.textContent = '💪 '+currentUser.name+' 트레이너';
     document.getElementById('nav-admin').style.display = 'none';
+    document.getElementById('nav-trainer').style.display = 'flex';
+    document.getElementById('nav-workout').style.display = 'none';
+    document.getElementById('nav-shop').style.display = 'none';
     document.getElementById('nav-profile').style.display = 'none';
     document.getElementById('uploadBtnCard').style.display = 'none';
+    navigate('trainer');
   } else {
     badge.className = 'role-badge role-member'; badge.textContent = '🏃 '+currentUser.name+' 회원님';
     document.getElementById('nav-admin').style.display = 'none';
@@ -834,6 +869,76 @@ function adminDelTrainer(i) {
   localStorage.setItem('sh_trainers', JSON.stringify(trainers));
   renderAdmin(); showToast('🗑️ 삭제됐습니다');
 }
+
+
+// ═══════════ TRAINER MEMBER VIEW ═══════════
+let selectedMember=null, detailTab='meal', allMemberNames=[];
+
+function renderTrainer() {
+  const nm=[...meals,...workouts].map(x=>x.memberName).filter(Boolean);
+  allMemberNames=[...new Set(nm)];
+  renderMemberList(allMemberNames);
+}
+function renderMemberList(names) {
+  document.getElementById('trainerMemberCount').textContent=`총 ${names.length}명`;
+  const list=document.getElementById('trainerMemberList');
+  if(!names.length){list.innerHTML='<div style="text-align:center;color:var(--gray3);padding:60px 20px;font-size:14px">아직 기록한 회원이 없어요</div>';return;}
+  list.innerHTML=names.map(name=>{
+    const mc=meals.filter(m=>m.memberName===name).length;
+    const wc=workouts.filter(w=>w.memberName===name).length;
+    const last=meals.filter(m=>m.memberName===name).sort((a,b)=>b.ts-a.ts)[0];
+    const lastDate=last?new Date(last.ts).toLocaleDateString('ko-KR',{month:'short',day:'numeric'}):'기록없음';
+    const unread=meals.filter(m=>m.memberName===name&&!(m.comments||[]).some(c=>c.isTrainer)).length+workouts.filter(w=>w.memberName===name&&!(w.comments||[]).some(c=>c.isTrainer)).length;
+    return `<div onclick="openMemberDetail('${name}')" style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='rgba(74,144,217,.04)'" onmouseout="this.style.background='none'">
+      <div style="width:46px;height:46px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">${name[0]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700;margin-bottom:3px">${name} 회원님</div>
+        <div style="font-size:12px;color:var(--gray3)">식단 ${mc}개 · 운동 ${wc}개 · 최근 ${lastDate}</div>
+      </div>
+      ${unread>0?`<div style="background:var(--accent);color:white;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0">댓글 ${unread}</div>`:'<div style="color:var(--gray3);font-size:18px">›</div>'}
+    </div>`;
+  }).join('');
+}
+function filterMembers(){const q=document.getElementById('memberSearchInput').value.toLowerCase();renderMemberList(allMemberNames.filter(n=>n.toLowerCase().includes(q)));}
+function openMemberDetail(name){selectedMember=name;detailTab='meal';document.getElementById('trainerMemberListView').style.display='none';document.getElementById('trainerMemberDetailView').style.display='block';document.getElementById('detailMemberName').textContent=name+' 회원님';setDetailTab('meal');}
+function backToMemberList(){selectedMember=null;document.getElementById('trainerMemberDetailView').style.display='none';document.getElementById('trainerMemberListView').style.display='block';renderTrainer();}
+function setDetailTab(tab){
+  detailTab=tab;
+  const mBtn=document.getElementById('dtab-meal');const wBtn=document.getElementById('dtab-workout');
+  const mL=document.getElementById('detailMealList');const wL=document.getElementById('detailWorkoutList');
+  const activeStyle='flex:1;padding:12px;background:none;border:none;border-bottom:2px solid var(--blue-light);color:var(--blue-light);font-family:"Noto Sans KR",sans-serif;font-size:14px;font-weight:700;cursor:pointer';
+  const inactiveStyle='flex:1;padding:12px;background:none;border:none;border-bottom:2px solid transparent;color:var(--gray3);font-family:"Noto Sans KR",sans-serif;font-size:14px;cursor:pointer';
+  if(tab==='meal'){mBtn.style.cssText=activeStyle;wBtn.style.cssText=inactiveStyle;mL.style.display='block';wL.style.display='none';renderDetailMeals();}
+  else{wBtn.style.cssText=activeStyle;mBtn.style.cssText=inactiveStyle;mL.style.display='none';wL.style.display='block';renderDetailWorkouts();}
+}
+function renderDetailMeals(){
+  const mm=meals.filter(m=>m.memberName===selectedMember);
+  const list=document.getElementById('detailMealList');
+  if(!mm.length){list.innerHTML='<div style="text-align:center;color:var(--gray3);padding:40px;font-size:14px">아직 식단 기록이 없어요</div>';return;}
+  list.innerHTML=[...mm].reverse().map((m,i)=>{
+    const realIdx=meals.indexOf(mm[mm.length-1-i]);
+    const timeStr=new Date(m.ts).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const imgPart=m.photo?`<div class="meal-img"><img src="${m.photo}" alt="식단"></div>`:'';
+    const commentsHTML=(m.comments||[]).map(c=>`<div class="comment-item"><div class="comment-avatar" style="background:${c.isTrainer?'#ff9500':'#1a4a8a'}">${c.isTrainer?'💪':selectedMember[0]}</div><div class="comment-bubble"><div class="comment-author" style="color:${c.isTrainer?'#ff9500':'var(--blue-light)'}">${c.isTrainer?c.trainerName+' 트레이너':selectedMember}</div><div class="comment-text">${c.text}</div></div></div>`).join('');
+    return `<div class="meal-card">${imgPart}<div class="meal-body"><div class="meal-meta"><span class="meal-type-badge">${m.type}</span><span class="meal-time">${timeStr}</span></div><div class="meal-name">${m.name||'식단 기록'}</div><div class="macro-row"><div class="macro-chip kcal"><div class="macro-num kcal">${Math.round(m.kcal||0)}</div><div class="macro-unit">kcal</div></div><div class="macro-chip prot"><div class="macro-num prot">${Math.round(m.prot||0)}g</div><div class="macro-unit">단백질</div></div><div class="macro-chip carb"><div class="macro-num carb">${Math.round(m.carb||0)}g</div><div class="macro-unit">탄수화물</div></div><div class="macro-chip fat"><div class="macro-num fat">${Math.round(m.fat||0)}g</div><div class="macro-unit">지방</div></div></div><div class="comments-area"><div id="dmc_${realIdx}">${commentsHTML}</div><div class="comment-input-row"><input class="comment-input" id="dmci_${realIdx}" placeholder="식단 피드백 남기기..."><button class="comment-send" onclick="addDetailMealComment(${realIdx})">전송</button></div></div></div></div>`;
+  }).join('');
+}
+function addDetailMealComment(realIdx){const input=document.getElementById('dmci_'+realIdx);const text=input?.value.trim();if(!text)return;if(!meals[realIdx].comments)meals[realIdx].comments=[];meals[realIdx].comments.push({text,isTrainer:true,trainerName:currentUser.name,ts:Date.now()});localStorage.setItem('sh_meals',JSON.stringify(meals));renderDetailMeals();showToast('💪 피드백이 전달됐어요!');}
+function renderDetailWorkouts(){
+  const mw=workouts.filter(w=>w.memberName===selectedMember);
+  const list=document.getElementById('detailWorkoutList');
+  if(!mw.length){list.innerHTML='<div style="text-align:center;color:var(--gray3);padding:40px;font-size:14px">아직 운동 기록이 없어요</div>';return;}
+  list.innerHTML=[...mw].reverse().map((w,i)=>{
+    const realIdx=workouts.indexOf(mw[mw.length-1-i]);
+    const dateStr=new Date(w.ts).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const typeEmoji=w.type==='cardio'?'🏃':'🏋️';
+    const imgPart=w.photo?`<div class="meal-img"><img src="${w.photo}" alt="운동"></div>`:'';
+    const chips=w.type==='weight'?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px"><div style="background:rgba(74,144,217,.1);border:1px solid rgba(74,144,217,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--blue-light)">${w.sets?.length||0}</div><div style="font-size:10px;color:var(--gray3)">세트</div></div><div style="background:rgba(126,200,227,.08);border:1px solid rgba(126,200,227,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7ec8e3">${(w.sets||[]).reduce((a,s)=>a+(parseInt(s.reps)||0),0)}</div><div style="font-size:10px;color:var(--gray3)">총 횟수</div></div><div style="background:rgba(199,125,255,.08);border:1px solid rgba(199,125,255,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#c77dff">${(w.sets||[]).reduce((a,s)=>a+(parseFloat(s.weight)||0)*(parseInt(s.reps)||0),0).toFixed(0)}</div><div style="font-size:10px;color:var(--gray3)">볼륨</div></div></div>`:`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px"><div style="background:rgba(249,199,79,.08);border:1px solid rgba(249,199,79,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#f9c74f">${w.cardioTime||0}</div><div style="font-size:10px;color:var(--gray3)">분</div></div><div style="background:rgba(126,200,227,.08);border:1px solid rgba(126,200,227,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7ec8e3">${w.cardioDist||0}</div><div style="font-size:10px;color:var(--gray3)">km</div></div><div style="background:rgba(255,149,0,.08);border:1px solid rgba(255,149,0,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent)">${w.cardioKcal||0}</div><div style="font-size:10px;color:var(--gray3)">kcal</div></div></div>`;
+    const commentsHTML=(w.comments||[]).map(c=>`<div class="comment-item"><div class="comment-avatar" style="background:${c.isTrainer?'#ff9500':'#1a4a8a'}">${c.isTrainer?'💪':selectedMember[0]}</div><div class="comment-bubble"><div class="comment-author" style="color:${c.isTrainer?'#ff9500':'var(--blue-light)'}">${c.isTrainer?c.trainerName+' 트레이너':selectedMember}</div><div class="comment-text">${c.text}</div></div></div>`).join('');
+    return `<div class="meal-card">${imgPart}<div class="meal-body"><div class="meal-meta"><span class="meal-type-badge">${typeEmoji} ${w.name}</span><span class="meal-time">${dateStr}</span></div>${chips}${w.memo?`<div style="font-size:12px;color:var(--gray3);padding:8px 0;border-top:1px solid var(--border);margin-bottom:10px">📝 ${w.memo}</div>`:''}<div class="comments-area"><div id="dwc_${realIdx}">${commentsHTML}</div><div class="comment-input-row"><input class="comment-input" id="dwci_${realIdx}" placeholder="운동 피드백 남기기..."><button class="comment-send" onclick="addDetailWorkoutComment(${realIdx})">전송</button></div></div></div></div>`;
+  }).join('');
+}
+function addDetailWorkoutComment(realIdx){const input=document.getElementById('dwci_'+realIdx);const text=input?.value.trim();if(!text)return;if(!workouts[realIdx].comments)workouts[realIdx].comments=[];workouts[realIdx].comments.push({text,isTrainer:true,trainerName:currentUser.name,ts:Date.now()});localStorage.setItem('sh_workouts',JSON.stringify(workouts));renderDetailWorkouts();showToast('💪 피드백이 전달됐어요!');}
 
 function showToast(msg) {
   const t = document.getElementById('toast');
