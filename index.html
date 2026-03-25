@@ -440,15 +440,79 @@ body { background:var(--black); color:var(--white); font-family:'Noto Sans KR',s
   </div>
 </div>
 
+
+<!-- ═══ WORKOUT SCREEN ═══ -->
+<div class="screen" id="screen-workout">
+  <div class="feed-header-bar">
+    <div style="font-size:16px;font-weight:700">운동 일지</div>
+    <div style="font-size:13px;color:var(--gray3)" id="workoutDate"></div>
+  </div>
+  <div class="upload-btn-card" id="workoutAddBtn" onclick="openWorkoutModal()">
+    <div class="upload-icon">💪</div>
+    <div class="upload-label">오늘 운동 기록하기</div>
+    <div class="upload-sub">종목, 세트, 횟수, 무게를 기록해보세요</div>
+  </div>
+  <div id="workoutList"></div>
+</div>
+
+<!-- WORKOUT MODAL -->
+<div class="modal-overlay" id="workoutModal">
+  <div class="modal-sheet" style="max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeWorkoutModal()">✕</button>
+    <div class="modal-handle"></div>
+    <div class="modal-title">운동 기록하기</div>
+    <div class="photo-preview" id="wPhotoPreview" onclick="triggerWorkoutFile()" style="aspect-ratio:16/7;margin-bottom:14px">
+      <span id="wPhotoPlaceholder" style="font-size:28px;color:var(--gray3)">📷 운동 사진 추가</span>
+    </div>
+    <input type="file" id="wFileInput" accept="image/*" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <button id="wtab-weight" onclick="setWorkoutTab('weight')" style="padding:10px;border-radius:10px;background:var(--blue);border:none;color:white;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🏋️ 웨이트</button>
+      <button id="wtab-cardio" onclick="setWorkoutTab('cardio')" style="padding:10px;border-radius:10px;background:var(--gray2);border:1px solid var(--border);color:var(--gray3);font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer">🏃 유산소</button>
+    </div>
+    <div id="wWeightSection">
+      <div class="modal-form-row" style="margin-bottom:10px">
+        <div class="modal-input-group" style="grid-column:1/-1">
+          <label>운동 종목</label>
+          <input class="modal-input" id="w_name" placeholder="예: 벤치프레스, 스쿼트, 데드리프트">
+        </div>
+      </div>
+      <div id="setList" style="margin-bottom:8px"></div>
+      <button onclick="addSet()" style="width:100%;padding:10px;border-radius:10px;background:var(--gray2);border:1px dashed var(--border);color:var(--gray3);font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer;margin-bottom:12px">+ 세트 추가</button>
+    </div>
+    <div id="wCardioSection" style="display:none">
+      <div class="modal-form-row">
+        <div class="modal-input-group">
+          <label>유산소 종류</label>
+          <select class="modal-select" id="w_cardio_type"><option>런닝</option><option>사이클</option><option>걷기</option><option>줄넘기</option><option>수영</option><option>기타</option></select>
+        </div>
+        <div class="modal-input-group"><label>시간 (분)</label><input class="modal-input" id="w_cardio_time" type="number" placeholder="30"></div>
+      </div>
+      <div class="modal-form-row">
+        <div class="modal-input-group"><label>거리 (km)</label><input class="modal-input" id="w_cardio_dist" type="number" placeholder="3.5" step="0.1"></div>
+        <div class="modal-input-group"><label>소모 칼로리</label><input class="modal-input" id="w_cardio_kcal" type="number" placeholder="300"></div>
+      </div>
+    </div>
+    <div class="modal-input-group" style="margin-bottom:12px">
+      <label>메모 (컨디션, 느낀점 등)</label>
+      <input class="modal-input" id="w_memo" placeholder="오늘 컨디션은 어땠나요?">
+    </div>
+    <button class="post-btn" onclick="postWorkout()" style="background:var(--blue)">💪 운동 일지 저장하기</button>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="nav-btn active" id="nav-feed" onclick="navigate('feed')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    식단 피드
+    식단
+  </button>
+  <button class="nav-btn" id="nav-workout" onclick="navigate('workout')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4M6 9h12M6 15h12"/></svg>
+    운동일지
   </button>
   <button class="nav-btn" id="nav-shop" onclick="navigate('shop')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    추천 제품
+    추천
   </button>
   <button class="nav-btn" id="nav-profile" onclick="navigate('profile')" style="display:none">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -778,6 +842,93 @@ function showToast(msg) {
 }
 
 document.getElementById('uploadModal').addEventListener('click', e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('workoutModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeWorkoutModal(); });
+document.getElementById('wFileInput').addEventListener('change', function(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    wPhotoDataURL=ev.target.result;
+    const prev=document.getElementById('wPhotoPreview');
+    document.getElementById('wPhotoPlaceholder').style.display='none';
+    let img=prev.querySelector('img'); if(!img){img=document.createElement('img');prev.appendChild(img);}
+    img.src=wPhotoDataURL; img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:14px;';
+  };
+  reader.readAsDataURL(file); this.value='';
+});
+
+let workouts=JSON.parse(localStorage.getItem('sh_workouts')||'[]');
+let setCount=1, workoutTab='weight', wPhotoDataURL=null;
+
+function renderWorkout() {
+  document.getElementById('workoutDate').textContent=new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'});
+  const dw=currentRole==='member'?workouts.filter(w=>w.memberName===currentUser.name):workouts;
+  const list=document.getElementById('workoutList');
+  if(!dw.length){list.innerHTML=`<div style="text-align:center;color:var(--gray3);padding:40px 20px;font-size:14px">${currentRole==='trainer'?'아직 등록된 운동일지가 없어요':'오늘의 운동을 기록해보세요! 🏋️'}</div>`;return;}
+  list.innerHTML=[...dw].reverse().map((w,i)=>workoutCardHTML(w,dw.length-1-i,dw)).join('');
+}
+
+function workoutCardHTML(w,idx,arr) {
+  const realIdx=workouts.indexOf(arr[arr.length-1-idx]);
+  const dateStr=new Date(w.ts).toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  const timeStr=new Date(w.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  const memberTag=(currentRole==='trainer'||currentRole==='admin')?`<span style="font-size:12px;color:var(--blue-light);font-weight:500">👤 ${w.memberName||'회원'}</span>`:'';
+  const imgPart=w.photo?`<div class="meal-img"><img src="${w.photo}" alt="운동사진"></div>`:'';
+  const typeEmoji=w.type==='cardio'?'🏃':'🏋️';
+  const summaryChips=w.type==='weight'?`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <div style="background:rgba(74,144,217,.1);border:1px solid rgba(74,144,217,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--blue-light)">${w.sets?.length||0}</div><div style="font-size:10px;color:var(--gray3)">세트</div></div>
+      <div style="background:rgba(126,200,227,.08);border:1px solid rgba(126,200,227,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7ec8e3">${(w.sets||[]).reduce((a,s)=>a+(parseInt(s.reps)||0),0)}</div><div style="font-size:10px;color:var(--gray3)">총 횟수</div></div>
+      <div style="background:rgba(199,125,255,.08);border:1px solid rgba(199,125,255,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#c77dff">${(w.sets||[]).reduce((a,s)=>a+(parseFloat(s.weight)||0)*(parseInt(s.reps)||0),0).toFixed(0)}</div><div style="font-size:10px;color:var(--gray3)">볼륨(kg)</div></div>
+    </div>`:`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <div style="background:rgba(249,199,79,.08);border:1px solid rgba(249,199,79,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#f9c74f">${w.cardioTime||0}</div><div style="font-size:10px;color:var(--gray3)">분</div></div>
+      <div style="background:rgba(126,200,227,.08);border:1px solid rgba(126,200,227,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:#7ec8e3">${w.cardioDist||0}</div><div style="font-size:10px;color:var(--gray3)">km</div></div>
+      <div style="background:rgba(255,149,0,.08);border:1px solid rgba(255,149,0,.2);border-radius:10px;padding:8px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent)">${w.cardioKcal||0}</div><div style="font-size:10px;color:var(--gray3)">kcal</div></div>
+    </div>`;
+  const setsHTML=w.type==='weight'&&w.sets?.length?`<div style="background:var(--gray2);border-radius:12px;padding:8px 12px;margin-bottom:12px"><div style="display:grid;grid-template-columns:32px 1fr 1fr 1fr;gap:4px;padding:4px 0;margin-bottom:4px"><span style="font-size:10px;color:var(--gray3)">세트</span><span style="font-size:10px;color:var(--gray3)">무게</span><span style="font-size:10px;color:var(--gray3)">횟수</span><span style="font-size:10px;color:var(--gray3)">1RM</span></div>${(w.sets||[]).map((s,i)=>`<div style="display:grid;grid-template-columns:32px 1fr 1fr 1fr;gap:4px;padding:5px 0;border-top:1px solid var(--border)"><span style="font-size:11px;color:var(--gray3);text-align:center">S${i+1}</span><span style="font-size:13px;font-weight:500">${s.weight?s.weight+'kg':'—'}</span><span style="font-size:13px;color:var(--gray4)">${s.reps?s.reps+'회':'—'}</span><span style="font-size:11px;color:var(--blue-light)">${s.weight&&s.reps?Math.round(parseFloat(s.weight)*parseFloat(s.reps)*0.0333+parseFloat(s.weight))+'kg':'—'}</span></div>`).join('')}</div>`:'';
+  const commentsHTML=(w.comments||[]).map(c=>`<div class="comment-item"><div class="comment-avatar" style="background:${c.isTrainer?'#ff9500':'#1a4a8a'}">${c.isTrainer?'💪':(w.memberName||'?')[0]}</div><div class="comment-bubble"><div class="comment-author" style="color:${c.isTrainer?'#ff9500':'var(--blue-light)'}">${c.isTrainer?c.trainerName+' 트레이너':w.memberName}</div><div class="comment-text">${c.text}</div></div></div>`).join('');
+  const canComment=currentRole==='trainer'||(currentRole==='member'&&w.memberName===currentUser.name);
+  const commentInput=canComment?`<div class="comment-input-row"><input class="comment-input" id="wcmt_${realIdx}" placeholder="${currentRole==='trainer'?'운동 피드백 남기기...':'메모 남기기...'}"><button class="comment-send" onclick="addWorkoutComment(${realIdx})">전송</button></div>`:'';
+  return `<div class="meal-card">${imgPart}<div class="meal-body"><div class="meal-meta"><span class="meal-type-badge">${typeEmoji} ${w.name}</span>${memberTag}<span class="meal-time">${dateStr} ${timeStr}</span></div>${summaryChips}${setsHTML}${w.memo?`<div style="font-size:12px;color:var(--gray3);padding:8px 0;border-top:1px solid var(--border);margin-bottom:10px">📝 ${w.memo}</div>`:''}<div class="comments-area"><div id="wcomments_${realIdx}">${commentsHTML}</div>${commentInput}</div></div></div>`;
+}
+
+function addWorkoutComment(realIdx) {
+  const input=document.getElementById('wcmt_'+realIdx); const text=input?.value.trim(); if(!text)return;
+  if(!workouts[realIdx].comments)workouts[realIdx].comments=[];
+  workouts[realIdx].comments.push({text,isTrainer:currentRole==='trainer',trainerName:currentRole==='trainer'?currentUser.name:null,ts:Date.now()});
+  localStorage.setItem('sh_workouts',JSON.stringify(workouts)); renderWorkout();
+  showToast(currentRole==='trainer'?'💪 피드백이 전달됐어요!':'✅ 메모가 저장됐어요!');
+}
+
+function openWorkoutModal() {
+  setCount=1;workoutTab='weight';wPhotoDataURL=null;
+  document.getElementById('w_name').value='';document.getElementById('w_memo').value='';
+  const prev=document.getElementById('wPhotoPreview');const img=prev.querySelector('img');if(img)img.remove();
+  document.getElementById('wPhotoPlaceholder').style.display='';
+  document.getElementById('setList').innerHTML=setRowHTML(1);
+  setWorkoutTab('weight'); document.getElementById('workoutModal').classList.add('open');
+}
+function closeWorkoutModal(){document.getElementById('workoutModal').classList.remove('open');}
+function triggerWorkoutFile(){document.getElementById('wFileInput').click();}
+function setWorkoutTab(tab) {
+  workoutTab=tab;
+  const wBtn=document.getElementById('wtab-weight');const cBtn=document.getElementById('wtab-cardio');
+  const wSec=document.getElementById('wWeightSection');const cSec=document.getElementById('wCardioSection');
+  if(tab==='weight'){wBtn.style.cssText='padding:10px;border-radius:10px;background:var(--blue);border:none;color:white;font-family:"Noto Sans KR",sans-serif;font-size:13px;font-weight:700;cursor:pointer';cBtn.style.cssText='padding:10px;border-radius:10px;background:var(--gray2);border:1px solid var(--border);color:var(--gray3);font-family:"Noto Sans KR",sans-serif;font-size:13px;cursor:pointer';wSec.style.display='block';cSec.style.display='none';}
+  else{cBtn.style.cssText='padding:10px;border-radius:10px;background:var(--blue);border:none;color:white;font-family:"Noto Sans KR",sans-serif;font-size:13px;font-weight:700;cursor:pointer';wBtn.style.cssText='padding:10px;border-radius:10px;background:var(--gray2);border:1px solid var(--border);color:var(--gray3);font-family:"Noto Sans KR",sans-serif;font-size:13px;cursor:pointer';wSec.style.display='none';cSec.style.display='block';}
+}
+function setRowHTML(n){return `<div id="setrow_${n}" style="display:grid;grid-template-columns:32px 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px"><span style="font-size:12px;color:var(--gray3);text-align:center;font-weight:700">S${n}</span><input class="modal-input" id="s_weight_${n}" type="number" placeholder="무게(kg)" style="padding:8px 10px;font-size:13px"><input class="modal-input" id="s_reps_${n}" type="number" placeholder="횟수" style="padding:8px 10px;font-size:13px"><button onclick="removeSet(${n})" style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--gray3);width:32px;height:36px;cursor:pointer;font-size:14px">✕</button></div>`;}
+function addSet(){setCount++;document.getElementById('setList').insertAdjacentHTML('beforeend',setRowHTML(setCount));}
+function removeSet(n){const el=document.getElementById('setrow_'+n);if(el&&document.getElementById('setList').children.length>1)el.remove();}
+function postWorkout() {
+  const memo=document.getElementById('w_memo').value||'';
+  let entry={type:workoutTab,memberName:currentUser.name,photo:wPhotoDataURL,memo,comments:[],ts:Date.now()};
+  if(workoutTab==='weight'){const name=document.getElementById('w_name').value.trim();if(!name){showToast('운동 종목을 입력해주세요');return;}const sets=[];for(let i=1;i<=setCount;i++){const wEl=document.getElementById('s_weight_'+i);const rEl=document.getElementById('s_reps_'+i);if(wEl&&rEl)sets.push({weight:wEl.value||'',reps:rEl.value||''});}entry={...entry,name,sets};}
+  else{entry={...entry,name:document.getElementById('w_cardio_type').value,cardioTime:document.getElementById('w_cardio_time').value||0,cardioDist:document.getElementById('w_cardio_dist').value||0,cardioKcal:document.getElementById('w_cardio_kcal').value||0};}
+  workouts.push(entry);localStorage.setItem('sh_workouts',JSON.stringify(workouts));
+  closeWorkoutModal();renderWorkout();showToast('🏋️ 운동일지가 저장됐어요!');
+}
+
 </script>
 </body>
 </html>
