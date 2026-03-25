@@ -426,6 +426,18 @@ body { background:var(--black); color:var(--white); font-family:'Noto Sans KR',s
     <button class="analyze-btn" id="analyzeBtn" onclick="analyzeFood()">
       <span id="analyzeBtnText">🤖 AI 영양소 분석하기</span>
     </button>
+
+    <!-- 수동 입력 (AI 실패 시 표시) -->
+    <div id="manualInputSection" style="display:none;margin-top:12px;background:var(--gray2);border-radius:14px;padding:14px;border:1px solid rgba(255,149,0,.3)">
+      <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px">✏️ 영양소 직접 입력</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div><div style="font-size:11px;color:var(--gray3);margin-bottom:4px">칼로리 (kcal)</div><input class="modal-input" id="m_kcal" type="number" placeholder="예: 550" style="padding:8px 10px;font-size:13px"></div>
+        <div><div style="font-size:11px;color:var(--gray3);margin-bottom:4px">단백질 (g)</div><input class="modal-input" id="m_prot" type="number" placeholder="예: 35" style="padding:8px 10px;font-size:13px"></div>
+        <div><div style="font-size:11px;color:var(--gray3);margin-bottom:4px">탄수화물 (g)</div><input class="modal-input" id="m_carb" type="number" placeholder="예: 60" style="padding:8px 10px;font-size:13px"></div>
+        <div><div style="font-size:11px;color:var(--gray3);margin-bottom:4px">지방 (g)</div><input class="modal-input" id="m_fat" type="number" placeholder="예: 15" style="padding:8px 10px;font-size:13px"></div>
+      </div>
+      <button onclick="applyManualInput()" style="width:100%;padding:10px;border-radius:10px;background:var(--accent);border:none;color:white;font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;cursor:pointer">확인</button>
+    </div>
     <div class="ai-result" id="aiResult">
       <div class="ai-result-title">⚡ AI 분석 결과</div>
       <div class="ai-macro-row">
@@ -716,6 +728,7 @@ function addComment(realIdx) {
 function openModal() {
   document.getElementById('uploadModal').classList.add('open');
   document.getElementById('aiResult').classList.remove('show');
+  document.getElementById('manualInputSection').style.display = 'none';
   document.getElementById('photoPlaceholder').style.display = '';
   document.getElementById('analyzeBtnText').textContent = '🤖 AI 영양소 분석하기';
   document.getElementById('analyzeBtn').disabled = false;
@@ -748,34 +761,81 @@ async function analyzeFood() {
   const mealName = document.getElementById('mealName').value || '음식';
   btn.disabled = true;
   btnText.innerHTML = '<span style="display:flex;align-items:center;gap:8px;justify-content:center"><span class="spinner"></span>AI 분석 중...</span>';
+
   try {
     const messages = [];
     if(currentPhotoDataURL) {
-      messages.push({role:'user',content:[{type:'image',source:{type:'base64',media_type:currentPhotoDataURL.split(';')[0].split(':')[1],data:currentPhotoDataURL.split(',')[1]}},{type:'text',text:`이 식단 사진을 분석해주세요. 음식명: "${mealName}". JSON만:\n{"kcal":숫자,"prot":숫자,"carb":숫자,"fat":숫자,"comment":"한글 3줄 이내 영양 조언"}`}]});
+      messages.push({role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:currentPhotoDataURL.split(';')[0].split(':')[1],data:currentPhotoDataURL.split(',')[1]}},
+        {type:'text',text:`이 식단 사진에 있는 음식들을 정확하게 분석해주세요. 음식명 힌트: "${mealName}".
+사진에 보이는 모든 음식을 파악하고 각각의 양을 추정해서 총 영양소를 계산해주세요.
+반드시 아래 JSON 형식으로만 응답하고 다른 텍스트는 절대 포함하지 마세요:
+{"kcal":숫자,"prot":숫자,"carb":숫자,"fat":숫자,"comment":"한글로 이 식단의 구체적인 영양 평가와 개선 조언 2-3문장"}`}
+      ]});
     } else {
-      messages.push({role:'user',content:`"${mealName}"의 영양소를 분석해주세요. JSON만:\n{"kcal":숫자,"prot":숫자,"carb":숫자,"fat":숫자,"comment":"한글 3줄 이내 영양 조언"}`});
+      messages.push({role:'user',content:`"${mealName}" 음식의 일반적인 1인분 기준 영양소를 분석해주세요.
+반드시 아래 JSON 형식으로만 응답하고 다른 텍스트는 절대 포함하지 마세요:
+{"kcal":숫자,"prot":숫자,"carb":숫자,"fat":숫자,"comment":"한글로 이 음식의 영양 특성과 섭취 조언 2-3문장"}`});
     }
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages})});
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({model:'claude-sonnet-4-20250514', max_tokens:800, messages})
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(()=>({}));
+      throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+    }
+
     const data = await resp.json();
-    const result = JSON.parse(data.content?.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+    const rawText = data.content?.map(c=>c.text||'').join('').trim();
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('JSON 파싱 실패');
+    const result = JSON.parse(jsonMatch[0]);
+
+    if (!result.kcal && result.kcal !== 0) throw new Error('유효하지 않은 분석 결과');
+
     document.getElementById('res_kcal').textContent = Math.round(result.kcal);
     document.getElementById('res_prot').textContent = Math.round(result.prot)+'g';
     document.getElementById('res_carb').textContent = Math.round(result.carb)+'g';
     document.getElementById('res_fat').textContent = Math.round(result.fat)+'g';
     document.getElementById('res_comment').textContent = result.comment;
     document.getElementById('aiResult').classList.add('show');
+    document.getElementById('manualInputSection').style.display = 'none';
     pendingAnalysis = result;
-  } catch {
-    const fb = {kcal:450,prot:35,carb:42,fat:12,comment:'단백질 함량이 적절합니다. 채소를 더 추가하면 좋아요!'};
-    document.getElementById('res_kcal').textContent = fb.kcal;
-    document.getElementById('res_prot').textContent = fb.prot+'g';
-    document.getElementById('res_carb').textContent = fb.carb+'g';
-    document.getElementById('res_fat').textContent = fb.fat+'g';
-    document.getElementById('res_comment').textContent = fb.comment;
-    document.getElementById('aiResult').classList.add('show');
-    pendingAnalysis = fb;
+    btnText.textContent = '✅ 분석 완료';
+
+  } catch(err) {
+    // AI 분석 실패 시 수동 입력 폼 표시
+    btnText.textContent = '🤖 AI 분석하기';
+    btn.disabled = false;
+    document.getElementById('aiResult').classList.remove('show');
+    document.getElementById('manualInputSection').style.display = 'block';
+    showToast('⚠️ AI 분석 실패 — 직접 입력해주세요');
+    return;
   }
-  btnText.textContent = '✅ 분석 완료'; btn.disabled = false;
+  btn.disabled = false;
+}
+
+function applyManualInput() {
+  const kcal = parseFloat(document.getElementById('m_kcal').value) || 0;
+  const prot = parseFloat(document.getElementById('m_prot').value) || 0;
+  const carb = parseFloat(document.getElementById('m_carb').value) || 0;
+  const fat  = parseFloat(document.getElementById('m_fat').value)  || 0;
+  if (!kcal && !prot && !carb && !fat) { showToast('영양소를 입력해주세요'); return; }
+  document.getElementById('res_kcal').textContent = Math.round(kcal);
+  document.getElementById('res_prot').textContent = Math.round(prot)+'g';
+  document.getElementById('res_carb').textContent = Math.round(carb)+'g';
+  document.getElementById('res_fat').textContent  = Math.round(fat)+'g';
+  document.getElementById('res_comment').textContent = '직접 입력한 영양 정보입니다.';
+  document.getElementById('aiResult').classList.add('show');
+  document.getElementById('manualInputSection').style.display = 'none';
+  pendingAnalysis = {kcal, prot, carb, fat, comment:'직접 입력'};
 }
 
 function postMeal() {
