@@ -1,0 +1,22 @@
+{
+  "name": "권시환 PT",
+  "short_name": "권시환 PT",
+  "description": "권시환 트레이너의 식단·운동 관리 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090f",
+  "theme_color": "#07090f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://carghdbs-ui.github.io/sh-fitness/sh-thumbnail.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "https://carghdbs-ui.github.io/sh-fitness/sh-thumbnail.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
