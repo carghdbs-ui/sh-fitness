@@ -1103,7 +1103,7 @@ function postWorkout() {
   else{entry={...entry,name:document.getElementById('w_cardio_type').value,cardioTime:document.getElementById('w_cardio_time').value||0,cardioDist:document.getElementById('w_cardio_dist').value||0,cardioKcal:document.getElementById('w_cardio_kcal').value||0};}
   workouts.push(entry);localStorage.setItem('sh_workouts',JSON.stringify(workouts));
   closeWorkoutModal();renderWorkout();showToast('🏋️ 운동일지가 저장됐어요!');
-}
+} 
 
 </script>
 </body>
